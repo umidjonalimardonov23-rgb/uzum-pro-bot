@@ -184,8 +184,19 @@ def admin_required(f):
 def index():
     return render_template("index.html", shop_name=SHOP_NAME, support=SUPPORT)
 
+@app.route("/admin/tg-auth", methods=["POST"])
+def admin_tg_auth():
+    data = request.json or {}
+    tg_id = str(data.get("tg_user_id", ""))
+    if tg_id and tg_id == str(ADMIN_ID):
+        session["admin"] = True
+        return jsonify({"ok": True})
+    return jsonify({"ok": False}), 403
+
 @app.route("/admin/login", methods=["GET","POST"])
 def admin_login():
+    if session.get("admin"):
+        return redirect(url_for("admin_page"))
     error = None
     if request.method == "POST":
         if request.form.get("password","") == ADMIN_PASSWORD:
