@@ -1,4 +1,4 @@
-import os, sqlite3, json, hashlib, secrets, random, string, uuid, urllib.request, urllib.parse
+import os, sqlite3, json, hashlib, secrets, random, string, uuid, urllib.request, urllib.parse, threading, time
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from functools import wraps
@@ -725,7 +725,24 @@ def api_chat_online():
     conn.close()
     return jsonify({"count": max(1, count)})
 
+@app.route("/ping")
+def ping():
+    return "pong", 200
+
+def keep_alive():
+    url = os.getenv("WEB_APP_URL", "")
+    if not url:
+        return
+    while True:
+        time.sleep(14 * 60)
+        try:
+            urllib.request.urlopen(f"{url}/ping", timeout=10)
+        except Exception:
+            pass
+
 if __name__ == "__main__":
     init_db()
+    t = threading.Thread(target=keep_alive, daemon=True)
+    t.start()
     port = int(os.getenv("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
